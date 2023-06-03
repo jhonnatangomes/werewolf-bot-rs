@@ -69,19 +69,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "actix-middleware-ed25519-authentication"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0301a3c1ec5c332a90554b415ad4ce47074f3473f78930061c7cfdc046bd6af2"
-dependencies = [
- "actix-http",
- "actix-web",
- "ed25519-dalek",
- "futures-util",
- "hex",
-]
-
-[[package]]
 name = "actix-router"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -751,12 +738,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nacl"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30aefc44d813c51b5e7952950e87c17f2e0e1a3274d63c8281a701e05323d548"
-
-[[package]]
 name = "num_cpus"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1278,10 +1259,11 @@ checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 name = "werewolf-bot-rs"
 version = "0.1.0"
 dependencies = [
- "actix-middleware-ed25519-authentication",
  "actix-web",
  "dotenvy",
- "nacl",
+ "ed25519-dalek",
+ "futures-util",
+ "hex",
  "serde",
  "serde_json",
  "serde_repr",

@@ -6,10 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-middleware-ed25519-authentication = "0.3.0"
 actix-web = "4.3.1"
 dotenvy = "0.15.7"
-nacl = "0.5.3"
 serde = { version = "1.0.160", features = ["derive"] }
 serde_json = "1.0.96"
 serde_repr = "0.1.12"
+futures-util = "0.3.28"
+ed25519-dalek = "1.0.1"
+hex = "0.4.3"
