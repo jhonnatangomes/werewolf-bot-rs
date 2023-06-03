@@ -3,14 +3,16 @@ use std::{
     rc::Rc,
 };
 
+use actix_http::h1::Payload;
 use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
     error::ErrorUnauthorized,
     http::header::HeaderValue,
+    web::BytesMut,
     Error, HttpMessage,
 };
 use ed25519_dalek::{PublicKey, Signature, Verifier};
-use futures_util::{future::LocalBoxFuture, FutureExt};
+use futures_util::{future::LocalBoxFuture, FutureExt, StreamExt};
 
 #[derive(Clone, Debug)]
 pub struct Ed25519Authentication {
@@ -80,7 +82,13 @@ async fn authenticate_request(
     data: &Ed25519Authentication,
 ) -> Result<(), String> {
     let empty_header = HeaderValue::from_static("");
-    let body = req.extract::<String>().await.unwrap();
+    let (_, payload) = req.parts_mut();
+    let mut body = BytesMut::new();
+    while let Some(item) = payload.next().await {
+        if let Ok(bytes) = item {
+            body.extend_from_slice(&bytes);
+        }
+    }
     let signature = &hex::decode(
         req.headers()
             .get("X-Signature-Ed25519")
@@ -97,18 +105,21 @@ async fn authenticate_request(
         .headers()
         .get("X-Signature-Timestamp")
         .unwrap_or(&empty_header)
-        .to_str()
-        .unwrap();
-    let message = timestamp.to_string() + &body;
-    let message = message.as_bytes();
+        .as_bytes();
+    let message = timestamp.iter().chain(&body).cloned().collect::<Vec<u8>>();
     let Ed25519Authentication { public_key } = data;
     let public_key = &hex::decode(public_key).unwrap();
     let public_key = match PublicKey::from_bytes(public_key) {
         Ok(public_key) => public_key,
         Err(e) => return Err(format!("Invalid public key: {}", e)),
     };
-    match public_key.verify(message, &signature) {
-        Ok(_) => Ok(()),
+    match public_key.verify(&message, &signature) {
+        Ok(_) => {
+            let (_, mut new_payload) = Payload::create(true);
+            new_payload.unread_data(body.into());
+            req.set_payload(new_payload.into());
+            Ok(())
+        }
         Err(e) => return Err(format!("Invalid signature: {}", e)),
     }
 }

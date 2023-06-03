@@ -1,2 +1,4 @@
 /target
 .env
+register_slash_commands.sh
+get_registered_commands.sh

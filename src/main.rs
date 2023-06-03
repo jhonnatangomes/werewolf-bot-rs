@@ -5,36 +5,70 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 
 mod middleware;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct InteractionRequest {
     r#type: InteractionRequestType,
+    member: Option<Member>,
 }
 
-#[derive(Deserialize_repr, PartialEq)]
+#[derive(Deserialize_repr, PartialEq, Debug)]
 #[repr(u8)]
 enum InteractionRequestType {
     Ping = 1,
+    ApplicationCommand,
+}
+
+#[derive(Deserialize, Debug, Default)]
+struct Member {
+    user: Option<User>,
+}
+
+#[derive(Deserialize, Debug, Default)]
+struct User {
+    username: String,
+}
+
+#[derive(Serialize, Default)]
+struct InteractionResponse {
+    r#type: InteractionResponseType,
+    data: Option<InteractionResponseData>,
+}
+
+#[derive(Serialize_repr, Default)]
+#[repr(u8)]
+enum InteractionResponseType {
+    #[default]
+    Pong = 1,
+    ChannelMessageWithSource = 4,
 }
 
 #[derive(Serialize)]
-struct InteractionResponse {
-    r#type: InteractionResponseType,
-}
-
-#[derive(Serialize_repr)]
-#[repr(u8)]
-enum InteractionResponseType {
-    Pong = 1,
+struct InteractionResponseData {
+    content: Option<String>,
 }
 
 #[post("/interactions")]
 async fn interactions(body: web::Json<InteractionRequest>) -> impl Responder {
-    if body.r#type == InteractionRequestType::Ping {
-        HttpResponse::Ok().json(InteractionResponse {
+    match body.r#type {
+        InteractionRequestType::Ping => HttpResponse::Ok().json(InteractionResponse {
             r#type: InteractionResponseType::Pong,
-        })
-    } else {
-        HttpResponse::BadRequest().body("Invalid interaction type")
+            data: None,
+        }),
+        InteractionRequestType::ApplicationCommand => {
+            let username = match &body.member {
+                Some(member) => match &member.user {
+                    Some(user) => &user.username,
+                    None => "",
+                },
+                None => "",
+            };
+            HttpResponse::Ok().json(InteractionResponse {
+                r#type: InteractionResponseType::ChannelMessageWithSource,
+                data: Some(InteractionResponseData {
+                    content: Some(format!("Hello, {username}")),
+                }),
+            })
+        }
     }
 }
 
